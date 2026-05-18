@@ -68,10 +68,12 @@ export default function AddTransactionForm() {
             </label>
             <select
               {...form.register("accountName")}
-              className="w-full border p-2 rounded bg-white text-black border-gray-400 focus:outline-none focus:ring-2 focus:ring-black"
+              className="w-full border p-2 rounded bg-white text-black border-gray-400"
             >
               <option value="Cash">Cash in Hand</option>
               <option value="Bank">Bank Account</option>
+              <option value="Secret Cash">Vault: Secret Cash</option>
+              <option value="Secret Bank">Vault: Secret Bank</option>
             </select>
           </div>
         </div>
