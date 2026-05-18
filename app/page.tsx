@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { prisma } from "../lib/prisma";
 import AddTransactionForm from "./components/AddTransactionForm";
+import DeleteButton from "./components/DeleteButton"; // Tumhara delete button yahan import hua hai
 
 export default async function Dashboard() {
   const session = await getServerSession();
@@ -19,8 +20,7 @@ export default async function Dashboard() {
   );
   const totalBalance = cashAccount + bankAccount;
 
-  // 2. Optimized Query: Sirf latest 10 transactions laani hain memory aur network latency bachane ke liye.
-  // Aur include mein sirf account ka naam fetch karna hai, poora account object nahi.
+  // 2. Fetch recent transactions
   const recentTransactions = await prisma.transaction.findMany({
     orderBy: { date: "desc" },
     take: 10,
@@ -32,7 +32,7 @@ export default async function Dashboard() {
   });
 
   return (
-    <main className="max-w-6xl mx-auto p-4 md:p-8 text-black">
+    <main className="max-w-6xl mx-auto p-4 md:p-8 bg-gray-50 min-h-screen text-black">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-black text-gray-900">Dashboard</h1>
         <span className="text-sm font-medium text-gray-600">
@@ -92,7 +92,11 @@ export default async function Dashboard() {
                   <th className="px-4 py-3">Description</th>
                   <th className="px-4 py-3">Category</th>
                   <th className="px-4 py-3">Account</th>
-                  <th className="px-4 py-3 text-right rounded-tr-lg">Amount</th>
+                  <th className="px-4 py-3 text-right">Amount</th>
+                  <th className="px-4 py-3 text-right rounded-tr-lg">
+                    Action
+                  </th>{" "}
+                  {/* Naya column header */}
                 </tr>
               </thead>
               <tbody>
@@ -117,6 +121,10 @@ export default async function Dashboard() {
                       className={`px-4 py-3 text-right font-black ${tx.type === "INCOME" ? "text-green-600" : "text-red-600"}`}
                     >
                       {tx.type === "INCOME" ? "+" : "-"} Rs {tx.amount}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      {/* Tumhara Delete Button yahan embed hai */}
+                      <DeleteButton id={tx.id} />
                     </td>
                   </tr>
                 ))}

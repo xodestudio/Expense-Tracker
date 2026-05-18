@@ -43,3 +43,46 @@ export async function createTransaction(values: TransactionFormValues) {
     };
   }
 }
+
+export async function deleteTransaction(id: string) {
+  try {
+    await prisma.$transaction(async (tx) => {
+      // 1. Transaction aur Account fetch karo
+      const transaction = await tx.transaction.findUniqueOrThrow({
+        where: { id },
+      });
+      const account = await tx.account.findUniqueOrThrow({
+        where: { id: transaction.accountId },
+      });
+
+      // 2. Reversal Math Logic
+      let newBalance = account.balance;
+
+      if (transaction.type === "EXPENSE") {
+        // Expense delete ho raha hai, yani account mein paise wapis aayenge
+        newBalance += transaction.amount;
+      } else if (transaction.type === "INCOME") {
+        // Income delete ho rahi hai, yani account se paise wapis niklenge
+        newBalance -= transaction.amount;
+      }
+
+      // 3. Updated balance save karo
+      await tx.account.update({
+        where: { id: account.id },
+        data: { balance: newBalance },
+      });
+
+      // 4. Record permanently delete karo
+      await tx.transaction.delete({
+        where: { id },
+      });
+    });
+
+    // 5. Cache clear karo taake dashboard refresh ho
+    revalidatePath("/");
+    return { success: true };
+  } catch (error: any) {
+    console.error("Delete Error:", error);
+    return { success: false, error: "Delete fail ho gaya" };
+  }
+}
