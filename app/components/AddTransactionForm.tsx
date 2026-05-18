@@ -48,7 +48,7 @@ export default function AddTransactionForm() {
       )}
 
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-bold mb-1 text-gray-800">
               Type
@@ -76,7 +76,7 @@ export default function AddTransactionForm() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-bold mb-1 text-gray-800">
               Amount (Rs)
