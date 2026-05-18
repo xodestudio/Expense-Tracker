@@ -2,7 +2,8 @@ import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { prisma } from "../lib/prisma";
 import AddTransactionForm from "./components/AddTransactionForm";
-import DeleteButton from "./components/DeleteButton"; // Tumhara delete button yahan import hua hai
+import DeleteButton from "./components/DeleteButton";
+import Link from "next/link";
 
 export default async function Dashboard() {
   const session = await getServerSession();
@@ -122,8 +123,13 @@ export default async function Dashboard() {
                     >
                       {tx.type === "INCOME" ? "+" : "-"} Rs {tx.amount}
                     </td>
-                    <td className="px-4 py-3 text-right">
-                      {/* Tumhara Delete Button yahan embed hai */}
+                    <td className="px-4 py-3 text-right flex justify-end gap-3 items-center">
+                      <Link
+                        href={`/edit/${tx.id}`}
+                        className="text-blue-600 hover:text-blue-800 font-bold text-xs uppercase tracking-wider"
+                      >
+                        Edit
+                      </Link>
                       <DeleteButton id={tx.id} />
                     </td>
                   </tr>

@@ -86,3 +86,81 @@ export async function deleteTransaction(id: string) {
     return { success: false, error: "Delete fail ho gaya" };
   }
 }
+
+export async function updateTransaction(
+  id: string,
+  values: TransactionFormValues,
+) {
+  try {
+    const validated = transactionSchema.parse(values);
+
+    await prisma.$transaction(async (tx) => {
+      // 1. Purani transaction aur uska account dhoondo
+      const oldTx = await tx.transaction.findUniqueOrThrow({ where: { id } });
+      const oldAccount = await tx.account.findUniqueOrThrow({
+        where: { id: oldTx.accountId },
+      });
+
+      // 2. Naya account dhoondo (agar user ne dropdown se change kiya ho)
+      const newAccount = await tx.account.findFirstOrThrow({
+        where: { name: validated.accountName },
+      });
+
+      // 3. STEP A: Purani transaction ka effect khatam karo (Reversal)
+      let adjustedOldBalance = oldAccount.balance;
+      if (oldTx.type === "EXPENSE") adjustedOldBalance += oldTx.amount;
+      else if (oldTx.type === "INCOME") adjustedOldBalance -= oldTx.amount;
+
+      // 4. STEP B: Nayi values apply karo
+      if (oldAccount.id === newAccount.id) {
+        // Agar account wahi hai (e.g. Cash pehle tha, Cash ab bhi hai)
+        if (validated.type === "EXPENSE")
+          adjustedOldBalance -= validated.amount;
+        else if (validated.type === "INCOME")
+          adjustedOldBalance += validated.amount;
+
+        await tx.account.update({
+          where: { id: oldAccount.id },
+          data: { balance: adjustedOldBalance },
+        });
+      } else {
+        // Agar account change ho gaya (e.g. Cash se Bank ho gaya)
+        // Pehle purane account ko reversed balance ke sath save karo
+        await tx.account.update({
+          where: { id: oldAccount.id },
+          data: { balance: adjustedOldBalance },
+        });
+
+        // Ab naye account ka balance uthao aur us par nayi math apply karo
+        let adjustedNewBalance = newAccount.balance;
+        if (validated.type === "EXPENSE")
+          adjustedNewBalance -= validated.amount;
+        else if (validated.type === "INCOME")
+          adjustedNewBalance += validated.amount;
+
+        await tx.account.update({
+          where: { id: newAccount.id },
+          data: { balance: adjustedNewBalance },
+        });
+      }
+
+      // 5. Transaction ka record update karo
+      await tx.transaction.update({
+        where: { id },
+        data: {
+          accountId: newAccount.id,
+          type: validated.type,
+          amount: validated.amount,
+          category: validated.category,
+          description: validated.description,
+        },
+      });
+    });
+
+    revalidatePath("/");
+    return { success: true };
+  } catch (error: any) {
+    console.error("Update Error:", error);
+    return { success: false, error: "Update fail ho gaya" };
+  }
+}
